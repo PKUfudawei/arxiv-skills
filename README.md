@@ -11,7 +11,7 @@ Two skills for working with academic papers:
 ```bash
 git clone git@github.com:PKUfudawei/arxiv-skills.git
 
-cp arxiv-skills/skills/* ~/.claude/skills
+cp -r arxiv-skills/skills/* ~/.claude/skills
 ```
 Then restart `claude` to load global skills
 
