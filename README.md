@@ -1,4 +1,5 @@
 <div align="center">
+  
 # arxiv-skills
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -6,7 +7,7 @@
 [![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-green)](https://agentskills.io)
 [![Skills](https://img.shields.io/badge/skills.sh-Compatible-green)](https://skills.sh)
 
-<br>
+</div>
 
 Two skills for working with academic papers:
 
