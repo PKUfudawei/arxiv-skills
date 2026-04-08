@@ -9,10 +9,13 @@ import os
 import requests
 import argparse
 import threading
+import time
 from glob import glob
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+from dotenv import load_dotenv
+load_dotenv()
 
 
 JOB_URL = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
@@ -31,7 +34,7 @@ semaphore = threading.Semaphore(5)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="OCR PDFs to markdowns")
-    parser.add_argument("-f", "--files", type=str, default="arxiv/*/*.pdf")
+    parser.add_argument("-f", "--files", type=str, default="../data/arxiv/*/*.pdf")
     return parser.parse_args()
 
 
@@ -64,6 +67,8 @@ def download_and_merge(jsonl_url, final_md):
     lines = resp.text.strip().split("\n")
     all_md = []
     stop = False
+    output_dir = os.path.dirname(final_md)
+    os.makedirs(output_dir, exist_ok=True)
 
     for line in lines:
         if not line.strip():
@@ -73,16 +78,15 @@ def download_and_merge(jsonl_url, final_md):
             if stop:
                 continue
             md_text = res["markdown"]["text"]
-            lower = md_text.lower()
-            keywords = ['acknowledgement', 'acknowledgment', 'references']
-            indices = [lower.find(kw) for kw in keywords]
-            valid_indices = [idx for idx in indices if idx != -1]
-            if valid_indices:
-                cut_index = min(valid_indices)
-                all_md.append(md_text[:cut_index])
-                stop = True
-                break
+
+            for img_path, img_data in res["markdown"]["images"].items():
+                img_bytes = requests.get(img_data).content
+                full_img_path = os.path.join(output_dir, img_path)
+                os.makedirs(os.path.dirname(full_img_path), exist_ok=True)
+                with open(full_img_path, "wb") as f:
+                    f.write(img_bytes)
             all_md.append(md_text)
+
 
     with open(final_md, "w", encoding="utf-8") as f:
         f.write("\n".join(all_md))
@@ -107,10 +111,11 @@ if __name__ == "__main__":
     pdf_files = glob(args.files)
 
     tasks = []
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    with ThreadPoolExecutor(max_workers=16) as executor:
         for pdf_file in pdf_files:
             md_file = pdf_file.replace(".pdf", ".md")
             tasks.append(executor.submit(process_pdf, pdf_file, md_file))
+            time.sleep(1)
 
         for future in tqdm(as_completed(tasks), total=len(tasks), desc="OCR"):
             pass

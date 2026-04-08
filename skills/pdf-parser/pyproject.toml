@@ -1,0 +1,14 @@
+[project]
+name = "pdf-parser"
+version = "0.1.0"
+description = "Convert PDF papers to markdown using PaddleOCR API"
+requires-python = ">=3.7"
+dependencies = [
+    "PyMuPDF",
+    "requests",
+    "tqdm",
+    "python-dotenv",
+]
+
+[tool.uv]
+dev-dependencies = []

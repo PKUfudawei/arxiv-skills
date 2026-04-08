@@ -356,7 +356,7 @@ Prefix terms with field codes to search specific article fields:
 | Prefix | Field | Description |
 |--------|-------|-------------|
 | `ti` | title | `ti:transformer` |
-| `au` | author | `au:shaw` (last name lowercase, no hyphen if single author) |
+| `au` | author | `au:shaw` |
 | `abs` | abstract | `abs:attention mechanism` |
 | `co` | comment | `co:machine learning` |
 | `jr` | journal reference | `jr:Neural Networks` |

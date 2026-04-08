@@ -210,3 +210,4 @@ __marimo__/
 .env
 checkpoints/
 CLAUDE.md
+arxiv/
