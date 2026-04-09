@@ -1,6 +1,6 @@
 <div align="center">
 
-# ariv-skills
+# arXiv-skills
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-blueviolet)](https://claude.ai/code)
@@ -12,7 +12,7 @@ The skills for working with academic papers on arXiv.
 </div>
 
 ---
-- [ariv-skills](#ariv-skills)
+- [arXiv-skills](#arXiv-skills)
   - [arxiv-retriever](#arxiv-retriever)
     - [Examples](#examples)
   - [pdf-parser](#pdf-parser)
