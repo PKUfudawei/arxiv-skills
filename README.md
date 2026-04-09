@@ -11,9 +11,14 @@ The skills for working with academic papers on arXiv.
 
 </div>
 
+- [arxiv-retriever](#arxiv-retriever)
+- [pdf-parser](#pdf-parser)
+- [Installation](#installation)
+- [Acknowledgements](#acknowledgements)
+
 ## arxiv-retriever
 
-Search and download papers, metadata, and BibTex from arXiv using natural language.
+Search and download **PDF**, **metadata**, and **BibTex** from arXiv using natural language. More details in [skills/arxiv-retriever/SKILL.md](skills/arxiv-retriever/SKILL.md).
 
 ![Demo](assets/demo.png)
 
