@@ -13,7 +13,7 @@ The skills for working with academic papers on arXiv.
 
 - [arxiv-retriever](#arxiv-retriever): search and download **PDF**, **metadata**, and **BibTex** from arXiv using natural language.
 - [pdf-parser](#pdf-parser): extract markdown and images from PDF using PaddleOCR.
-- [Installation](#installation): support [skills.sh(https://skills.sh) and manual installations.
+- [Installation](#installation): support [skills.sh](https://skills.sh) and manual installations.
 
 ## arxiv-retriever
 
