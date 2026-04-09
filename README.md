@@ -11,14 +11,13 @@ The skills for working with academic papers on arXiv.
 
 </div>
 
-- [arxiv-retriever](#arxiv-retriever)
-- [pdf-parser](#pdf-parser)
-- [Installation](#installation)
-- [Acknowledgements](#acknowledgements)
+- [arxiv-retriever](#arxiv-retriever): search and download **PDF**, **metadata**, and **BibTex** from arXiv using natural language.
+- [pdf-parser](#pdf-parser): extract markdown and images from PDF using PaddleOCR.
+- [Installation](#installation): support [skills.sh(https://skills.sh) and manual installations.
 
 ## arxiv-retriever
 
-Search and download **PDF**, **metadata**, and **BibTex** from arXiv using natural language. More details in [skills/arxiv-retriever/SKILL.md](skills/arxiv-retriever/SKILL.md).
+More details in [skills/arxiv-retriever/SKILL.md](skills/arxiv-retriever/SKILL.md).
 
 ![Demo](assets/demo.png)
 
@@ -42,8 +41,6 @@ Find papers about attention by author Vaswani
 ---
 
 ## pdf-parser
-
-Convert PDF papers to markdown using PaddleOCR.
 
 ### Examples
 
