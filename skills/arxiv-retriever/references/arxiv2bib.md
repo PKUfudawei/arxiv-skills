@@ -11,8 +11,6 @@ This document provides a comprehensive reference for the `arxiv2bib` command-lin
 pip install arxiv2bib
 ```
 
-**Standalone usage** (without installation): Copy `arxiv2bib.py` to a directory in your PATH.
-
 ---
 
 ## Usage
@@ -67,22 +65,9 @@ The tool outputs BibTeX entries in standard format:
 
 ---
 
-## Integration with arxiv Skill
-
-The `arxiv2bib` tool can be used in conjunction with the `arxiv` Python package workflow:
-
-1. Use `arxiv` skill to search and discover papers
-2. Extract paper IDs from search results
-3. Generate BibTeX entries using `arxiv2bib`
-
----
-
 ## References
 
 - Repository: https://github.com/nthgrigg/arxiv2bib
-- Homepage: http://nathangrigg.github.io/arxiv2bib
-- PyPI: https://pypi.org/project/arxiv2bib/
-- arXiv API: https://arxiv.org/help/api/index
 
 ---
 

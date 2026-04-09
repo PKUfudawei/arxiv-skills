@@ -3,7 +3,6 @@
 OCR script to convert PDF papers to markdown using PaddleOCR
 """
 
-import fitz
 import json
 import os
 import requests

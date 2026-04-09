@@ -12,7 +12,7 @@ def parse_args():
     p.add_argument("--max_results", type=int, help="Max papers to download")
     p.add_argument("--sort_by", default="SubmittedDate", choices=["Relevance", "LastUpdatedDate", "SubmittedDate"])
     p.add_argument("--sort_order", default="Descending", choices=["Ascending", "Descending"])
-    p.add_argument("-o", "--output_dir", default="./arxiv/")
+    p.add_argument("-o", "--output_dir", default=os.path.expanduser("~/arxiv"))
     p.add_argument("--page_size", type=int, default=100)
     p.add_argument("--delay_seconds", type=float, default=3.0)
     p.add_argument("--num_retries", type=int, default=3)
