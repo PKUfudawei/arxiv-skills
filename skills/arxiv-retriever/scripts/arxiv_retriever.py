@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Download arXiv papers by query or ID list."""
-import arxiv, argparse, os
+import arxiv, argparse, os, requests
 from tqdm import tqdm
 import json
 
@@ -40,24 +40,49 @@ def save_meta(paper, paper_dir):
         json.dump(meta, f, indent=2, default=str)
 
 
+def download_pdf_by_url(paper_id, output_dir, filename):
+    """Download PDF directly from arxiv URL."""
+    pdf_url = f"https://arxiv.org/pdf/{paper_id}.pdf"
+    pdf_path = os.path.join(output_dir, filename)
+    resp = requests.get(pdf_url, stream=True)
+    resp.raise_for_status()
+    with open(pdf_path, "wb") as f:
+        for chunk in resp.iter_content(chunk_size=8192):
+            f.write(chunk)
+    print(f"Downloaded: {filename}")
+
+
 def main():
     args = parse_args()
-    search = arxiv.Search(
-        query=args.query,
-        id_list=args.id_list.split(",") if args.id_list else None,
-        max_results=args.max_results,
-        sort_by=arxiv.SortCriterion[args.sort_by],
-        sort_order=arxiv.SortOrder[args.sort_order],
-    )
-    client = arxiv.Client(page_size=args.page_size, delay_seconds=args.delay_seconds, num_retries=args.num_retries)
+    id_list = args.id_list.split(",") if args.id_list else None
 
-    for paper in tqdm(client.results(search), total=args.max_results, unit="papers"):
-        arxiv_id = paper.get_short_id()
-        paper_dir = os.path.join(args.output_dir, arxiv_id)
-        os.makedirs(paper_dir, exist_ok=True)
-        paper.download_pdf(dirpath=paper_dir, filename=f"{arxiv_id}.pdf")
-        save_meta(paper, paper_dir)
-        os.system(f"arxiv2bib {arxiv_id} > {os.path.join(paper_dir, arxiv_id)}.bib")
+    if id_list:
+        # ID list 模式：直接用 pdf_url 下载，不走 arxiv API
+        for arxiv_id in tqdm(id_list, unit="papers"):
+            arxiv_id = arxiv_id.strip()
+            paper_dir = os.path.join(args.output_dir, arxiv_id)
+            os.makedirs(paper_dir, exist_ok=True)
+            pdf_filename = f"{arxiv_id}.pdf"
+            download_pdf_by_url(arxiv_id, paper_dir, pdf_filename)
+            # save_meta(paper, paper_dir)
+            os.system(f"arxiv2bib {arxiv_id} > {os.path.join(paper_dir, arxiv_id)}.bib")
+    else:
+        # Query 模式：用 arxiv API
+        search = arxiv.Search(
+            query=args.query,
+            max_results=args.max_results,
+            sort_by=arxiv.SortCriterion[args.sort_by],
+            sort_order=arxiv.SortOrder[args.sort_order],
+        )
+        client = arxiv.Client(page_size=args.page_size, delay_seconds=args.delay_seconds, num_retries=args.num_retries)
+
+        for paper in tqdm(client.results(search), total=args.max_results, unit="papers"):
+            arxiv_id = paper.get_short_id()
+            paper_dir = os.path.join(args.output_dir, arxiv_id)
+            os.makedirs(paper_dir, exist_ok=True)
+            paper.download_pdf(dirpath=paper_dir, filename=f"{arxiv_id}.pdf")
+            # save_meta(paper, paper_dir)
+            os.system(f"arxiv2bib {arxiv_id} > {os.path.join(paper_dir, arxiv_id)}.bib")
 
 
     print(f"Downloaded to {os.path.abspath(args.output_dir)}")
