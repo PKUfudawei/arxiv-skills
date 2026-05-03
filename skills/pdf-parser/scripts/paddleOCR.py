@@ -113,6 +113,9 @@ if __name__ == "__main__":
     with ThreadPoolExecutor(max_workers=16) as executor:
         for pdf_file in pdf_files:
             md_file = pdf_file.replace(".pdf", ".md")
+            if os.path.exists(md_file):
+                tqdm.write(f"Skipping {os.path.basename(pdf_file)}: MD already exists")
+                continue
             tasks.append(executor.submit(process_pdf, pdf_file, md_file))
             time.sleep(1)
 
