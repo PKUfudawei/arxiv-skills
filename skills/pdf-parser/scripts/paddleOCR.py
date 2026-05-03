@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OCR script to convert PDF papers to markdown using PaddleOCR
+Robust OCR script: PDF -> Markdown (PaddleOCR API)
 """
 
 import json
@@ -9,18 +9,22 @@ import requests
 import argparse
 import threading
 import time
+import traceback
 from glob import glob
-
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from dotenv import load_dotenv
-load_dotenv()
 
+load_dotenv()
 
 JOB_URL = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
 MODEL = "PaddleOCR-VL-1.5"
 
-headers = {"Authorization": f"bearer {os.environ['PADDLE_TOKEN']}"}
+TOKEN = os.getenv("PADDLE_TOKEN")
+if not TOKEN:
+    raise ValueError("PADDLE_TOKEN not set")
+
+headers = {"Authorization": f"bearer {TOKEN}"}
 
 optional_payload = {
     "useDocOrientationClassify": False,
@@ -28,29 +32,59 @@ optional_payload = {
     "useChartRecognition": False,
 }
 
-semaphore = threading.Semaphore(5)
+# 全局限流（所有 HTTP 请求）
+REQUEST_SEMAPHORE = threading.Semaphore(5)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="OCR PDFs to markdowns")
-    parser.add_argument("-f", "--files", type=str, default="../data/arxiv/*/*.pdf")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--files", nargs="+", default=["../data/arxiv/*/*.pdf"])
+    parser.add_argument("--workers", type=int, default=5)
     return parser.parse_args()
 
 
+# -----------------------
+# 通用请求函数（带 retry）
+# -----------------------
+def safe_request(method, url, max_retries=3, **kwargs):
+    for attempt in range(max_retries):
+        try:
+            with REQUEST_SEMAPHORE:
+                resp = requests.request(method, url, timeout=60, **kwargs)
+            resp.raise_for_status()
+            return resp
+        except Exception:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(2 * (attempt + 1))
+
+
+# -----------------------
+# 提交任务
+# -----------------------
 def submit_job(file_path):
     data = {"model": MODEL, "optionalPayload": json.dumps(optional_payload)}
+
     with open(file_path, "rb") as f:
         files = {"file": f}
-        resp = requests.post(JOB_URL, headers=headers, data=data, files=files)
-    resp.raise_for_status()
+        resp = safe_request("POST", JOB_URL, headers=headers, data=data, files=files)
+
     return resp.json()["data"]["jobId"]
 
 
-def wait_for_result(job_id):
+# -----------------------
+# 等待结果（带 timeout）
+# -----------------------
+def wait_for_result(job_id, timeout=600, interval=5):
+    start = time.time()
+
     while True:
-        r = requests.get(f"{JOB_URL}/{job_id}", headers=headers)
-        r.raise_for_status()
-        data = r.json()["data"]
+        if time.time() - start > timeout:
+            raise TimeoutError(f"Job {job_id} timeout")
+
+        resp = safe_request("GET", f"{JOB_URL}/{job_id}", headers=headers)
+        data = resp.json()["data"]
+
         state = data["state"]
 
         if state == "done":
@@ -58,66 +92,102 @@ def wait_for_result(job_id):
         elif state == "failed":
             return None
 
+        time.sleep(interval)
 
+
+# -----------------------
+# 下载并合并 markdown
+# -----------------------
 def download_and_merge(jsonl_url, final_md):
-    resp = requests.get(jsonl_url)
-    resp.raise_for_status()
-
+    resp = safe_request("GET", jsonl_url)
     lines = resp.text.strip().split("\n")
+
     all_md = []
-    stop = False
     output_dir = os.path.dirname(final_md)
     os.makedirs(output_dir, exist_ok=True)
 
     for line in lines:
         if not line.strip():
             continue
+
         result = json.loads(line)["result"]
+
         for res in result["layoutParsingResults"]:
-            if stop:
-                continue
             md_text = res["markdown"]["text"]
 
-            for img_path, img_data in res["markdown"]["images"].items():
-                img_bytes = requests.get(img_data).content
-                full_img_path = os.path.join(output_dir, img_path)
-                os.makedirs(os.path.dirname(full_img_path), exist_ok=True)
-                with open(full_img_path, "wb") as f:
-                    f.write(img_bytes)
-            all_md.append(md_text)
+            # 下载图片
+            for img_path, img_url in res["markdown"]["images"].items():
+                try:
+                    img_resp = safe_request("GET", img_url)
+                    full_img_path = os.path.join(output_dir, img_path)
+                    os.makedirs(os.path.dirname(full_img_path), exist_ok=True)
 
+                    with open(full_img_path, "wb") as f:
+                        f.write(img_resp.content)
+                except Exception:
+                    tqdm.write(f"[WARN] Image download failed: {img_url}")
+
+            all_md.append(md_text)
 
     with open(final_md, "w", encoding="utf-8") as f:
         f.write("\n".join(all_md))
 
 
-def process_pdf(pdf_path, md_path):
+# -----------------------
+# 主处理逻辑
+# -----------------------
+def process_pdf(pdf_path):
+    md_path = os.path.splitext(pdf_path)[0] + ".md"
+
     if os.path.exists(md_path):
-        return
+        return "skip", pdf_path
 
     try:
-        with semaphore:
-            job_id = submit_job(pdf_path)
+        job_id = submit_job(pdf_path)
         json_url = wait_for_result(job_id)
-        if json_url:
-            download_and_merge(json_url, md_path)
-    except Exception as e:
-        tqdm.write(f"Error processing {os.path.basename(pdf_path)}: {e}")
+
+        if not json_url:
+            return "failed", pdf_path
+
+        download_and_merge(json_url, md_path)
+        return "success", pdf_path
+
+    except Exception:
+        tqdm.write(f"[ERROR] {pdf_path}")
+        tqdm.write(traceback.format_exc())
+        return "error", pdf_path
 
 
+# -----------------------
+# 主程序
+# -----------------------
 if __name__ == "__main__":
     args = parse_args()
-    pdf_files = glob(args.files)
 
-    tasks = []
-    with ThreadPoolExecutor(max_workers=16) as executor:
-        for pdf_file in pdf_files:
-            md_file = pdf_file.replace(".pdf", ".md")
-            if os.path.exists(md_file):
-                tqdm.write(f"Skipping {os.path.basename(pdf_file)}: MD already exists")
-                continue
-            tasks.append(executor.submit(process_pdf, pdf_file, md_file))
-            time.sleep(1)
+    pdf_files = []
+    for pattern in args.files:
+        expanded = glob(pattern)
+        if expanded:
+            pdf_files.extend(expanded)
+        elif os.path.exists(pattern):
+            pdf_files.append(pattern)
 
-        for future in tqdm(as_completed(tasks), total=len(tasks), desc="OCR"):
-            pass
+    results = {"success": [], "failed": [], "error": [], "skip": []}
+
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        futures = [executor.submit(process_pdf, pdf) for pdf in pdf_files]
+
+        for future in tqdm(as_completed(futures), total=len(futures), desc="OCR"):
+            status, path = future.result()
+            results[status].append(path)
+
+    # summary
+    print("\n===== Summary =====")
+    for k, v in results.items():
+        print(f"{k}: {len(v)}")
+
+    # 保存失败列表（方便重跑）
+    if results["failed"] or results["error"]:
+        with open("failed_files.txt", "w") as f:
+            for x in results["failed"] + results["error"]:
+                f.write(x + "\n")
