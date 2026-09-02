@@ -45,13 +45,6 @@ npx skills@latest add PKUfudawei/arxiv-skills --skill pdf-parser
 npx skills@latest add PKUfudawei/arxiv-skills
 ```
 
-### Manual installation (Claude Code)
-
-```bash
-git clone https://github.com/PKUfudawei/arxiv-skills.git
-cp -r arxiv-skills/skills/* ~/.claude/skills/
-```
-
 ## arxiv-retriever
 
 Search arXiv and download papers by extracting parameters from a natural-language request (IDs, keywords, authors, categories, date ranges). Each paper is saved as `<arxiv_id>.pdf` together with `meta.json` and `<arxiv_id>.bib`.

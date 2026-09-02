@@ -45,13 +45,6 @@ npx skills@latest add PKUfudawei/arxiv-skills --skill pdf-parser
 npx skills@latest add PKUfudawei/arxiv-skills
 ```
 
-### 手动安装（Claude Code）
-
-```bash
-git clone https://github.com/PKUfudawei/arxiv-skills.git
-cp -r arxiv-skills/skills/* ~/.claude/skills/
-```
-
 ## arxiv-retriever：检索并下载论文
 
 从自然语言请求中解析参数（论文 ID、关键词、作者、分类、日期范围），检索 arXiv 并下载。每篇论文保存为 `<arxiv_id>.pdf`，并附 `meta.json` 与 `<arxiv_id>.bib`。
