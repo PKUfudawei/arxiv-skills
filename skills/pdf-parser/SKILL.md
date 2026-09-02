@@ -1,7 +1,7 @@
 ---
 name: pdf-parser
 description: Convert PDF papers to markdown using PaddleOCR API
-license: Proprietary. LICENSE has complete terms
+license: MIT
 ---
 
 # pdf-parser
@@ -64,7 +64,8 @@ python3 skills/pdf-parser/scripts/paddleOCR.py -f "/home/user/papers/*.pdf"
 
 | Argument | Short | Default | Description |
 |----------|-------|---------|-------------|
-| `--files` | `-f` | `../data/arxiv/*/*.pdf` | Glob pattern for PDF files to process |
+| `--files` | `-f` | *(required)* | Glob pattern(s) for PDF files to process (e.g. `"arxiv/*/*.pdf"`) |
+| `--workers` | | `5` | Maximum parallel PDF processing threads |
 
 ## Output Format
 
@@ -97,9 +98,8 @@ python3 skills/pdf-parser/scripts/paddleOCR.py -f "/home/user/papers/*.pdf"
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `max_workers` | `16` | Maximum parallel PDF processing threads |
+| `--workers` | `5` | Maximum parallel PDF processing threads |
 | `semaphore` | `5` | Maximum concurrent API requests |
-| `sleep_interval` | `1s` | Delay between job submissions |
 
 ## Example
 
@@ -127,18 +127,18 @@ python3 skills/pdf-parser/scripts/paddleOCR.py -f "arxiv/*/*.pdf"
 ## Error Handling
 
 - **Skipped Files**: PDFs that already have a corresponding `.md` file are skipped
-- **Failed Jobs**: Errors are logged to console with `tqdm.write()`
+- **Failed Jobs**: Server-side job failures / timeouts are reported with the job id via `tqdm.write()`; all failed paths are collected in `./failed_files.txt` so the batch can be re-run
 - **Network Errors**: Request failures are caught and logged per-file
+- **Exit Code**: the script exits non-zero when any file failed or errored
 
 ## Performance
 
-- **Parallel Processing**: Up to 16 PDFs processed concurrently
+- **Parallel Processing**: Up to 5 PDFs processed concurrently by default (`--workers`)
 - **Rate Limiting**: Max 5 simultaneous API requests to avoid throttling
 - **Progress Tracking**: Real-time progress bar using `tqdm`
 
 ## Dependencies
 
-- `fitz` (PyMuPDF) - PDF handling
 - `requests` - HTTP API calls
 - `tqdm` - Progress bars
 - `python-dotenv` - Environment variable loading

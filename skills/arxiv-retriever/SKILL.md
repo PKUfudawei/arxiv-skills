@@ -1,7 +1,7 @@
 ---
 name: arxiv-retriever
 description: Search and download arXiv papers by extracting parameters from natural language requests
-license: Proprietary. LICENSE has complete terms
+license: MIT
 ---
 
 # arXiv Paper Retrieval Guide
@@ -14,7 +14,7 @@ Search arXiv and download papers by extracting parameters from user requests, sy
 
 ```bash
 # Install dependencies
-pip3 install arxiv arxiv2bib
+pip3 install arxiv arxiv2bib requests tqdm
 
 # Basic keyword search
 python scripts/arxiv_retriever.py --query "quantum machine learning" --max_results 10
@@ -31,6 +31,16 @@ python scripts/arxiv_retriever.py --query "au:vaswani AND ti:transformer"
 ```
 User Prompt → Extract Parameters → Synthesize Query → User Confirmation → Execute Script → Download Papers
 ```
+
+### Output per paper
+
+Each paper is saved to `<output_dir>/<arxiv_id>/` containing:
+
+- `<arxiv_id>.pdf` — the paper
+- `meta.json` — title, authors, abstract, dates, categories, links (arXiv API available)
+- `<arxiv_id>.bib` — BibTeX entry (requires the `arxiv2bib` CLI)
+
+Papers already present are skipped; pass `--force` to re-download. When `--query` is used and no `--max_results` is given, the top 10 results are fetched.
 
 ## Parameter Extraction
 
@@ -102,7 +112,8 @@ User Prompt → Extract Parameters → Synthesize Query → User Confirmation �
 | `--max_results` | int | Maximum number of downloads |
 | `--sort_by` | str | `Relevance` \| `LastUpdatedDate` \| `SubmittedDate` |
 | `--sort_order` | str | `Ascending` \| `Descending` |
-| `--output_dir` | str | Output directory (default: `~/arxiv`) |
+| `--output_dir` | str | Output directory (default: current directory) |
+| `--force` | flag | Re-download and overwrite existing PDFs (default: skip existing) |
 
 ## Few-Shot Examples
 

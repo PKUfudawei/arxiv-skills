@@ -3,17 +3,19 @@
 Robust OCR script: PDF -> Markdown (PaddleOCR API)
 """
 
+import argparse
 import json
 import os
-import requests
-import argparse
+import sys
 import threading
 import time
 import traceback
-from glob import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
+from glob import glob
+
+import requests
 from dotenv import load_dotenv
+from tqdm import tqdm
 
 load_dotenv()
 
@@ -21,10 +23,6 @@ JOB_URL = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
 MODEL = "PaddleOCR-VL-1.5"
 
 TOKEN = os.getenv("PADDLE_TOKEN")
-if not TOKEN:
-    raise ValueError("PADDLE_TOKEN not set")
-
-headers = {"Authorization": f"bearer {TOKEN}"}
 
 optional_payload = {
     "useDocOrientationClassify": False,
@@ -36,10 +34,26 @@ optional_payload = {
 REQUEST_SEMAPHORE = threading.Semaphore(5)
 
 
+def get_headers():
+    """Return the Authorization headers, raising a clear error if PADDLE_TOKEN is unset."""
+    if not TOKEN:
+        raise ValueError(
+            "PADDLE_TOKEN is not set. Get a token from PaddleOCR AI Studio "
+            "(https://aistudio.baidu.com/) and set it in the environment "
+            "before running this script."
+        )
+    return {"Authorization": f"bearer {TOKEN}"}
+
+
 def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--files", nargs="+", default=["../data/arxiv/*/*.pdf"])
-    parser.add_argument("--workers", type=int, default=5)
+    parser = argparse.ArgumentParser(
+        description="Convert PDF papers to Markdown via the PaddleOCR-VL API",
+        epilog="Example: python paddleOCR.py -f 'arxiv/*/*.pdf'",
+    )
+    parser.add_argument("-f", "--files", nargs="+", default=None,
+                        help="Glob pattern(s) of PDF files to process (required)")
+    parser.add_argument("--workers", type=int, default=5,
+                        help="Max parallel PDF processing threads (default: 5)")
     return parser.parse_args()
 
 
@@ -67,7 +81,7 @@ def submit_job(file_path):
 
     with open(file_path, "rb") as f:
         files = {"file": f}
-        resp = safe_request("POST", JOB_URL, headers=headers, data=data, files=files)
+        resp = safe_request("POST", JOB_URL, headers=get_headers(), data=data, files=files)
 
     return resp.json()["data"]["jobId"]
 
@@ -80,9 +94,9 @@ def wait_for_result(job_id, timeout=600, interval=5):
 
     while True:
         if time.time() - start > timeout:
-            raise TimeoutError(f"Job {job_id} timeout")
+            raise TimeoutError(f"Job {job_id} timeout after {timeout}s (server-side job may still be running)")
 
-        resp = safe_request("GET", f"{JOB_URL}/{job_id}", headers=headers)
+        resp = safe_request("GET", f"{JOB_URL}/{job_id}", headers=get_headers())
         data = resp.json()["data"]
 
         state = data["state"]
@@ -90,6 +104,7 @@ def wait_for_result(job_id, timeout=600, interval=5):
         if state == "done":
             return data["resultUrl"]["jsonUrl"]
         elif state == "failed":
+            tqdm.write(f"[WARN] Job {job_id} failed on the server")
             return None
 
         time.sleep(interval)
@@ -161,8 +176,15 @@ def process_pdf(pdf_path):
 # -----------------------
 # 主程序
 # -----------------------
-if __name__ == "__main__":
+def main():
     args = parse_args()
+
+    if not args.files:
+        sys.exit("No input given. Pass at least one PDF glob pattern with -f, e.g. -f 'arxiv/*/*.pdf'")
+
+    if not TOKEN:
+        sys.exit("PADDLE_TOKEN is not set. Get a token from PaddleOCR AI Studio "
+                 "(https://aistudio.baidu.com/) and set it in the environment before running.")
 
     pdf_files = []
     for pattern in args.files:
@@ -171,6 +193,9 @@ if __name__ == "__main__":
             pdf_files.extend(expanded)
         elif os.path.exists(pattern):
             pdf_files.append(pattern)
+
+    if not pdf_files:
+        sys.exit(f"No PDF files matched: {', '.join(args.files)}")
 
     results = {"success": [], "failed": [], "error": [], "skip": []}
 
@@ -191,3 +216,10 @@ if __name__ == "__main__":
         with open("failed_files.txt", "w") as f:
             for x in results["failed"] + results["error"]:
                 f.write(x + "\n")
+        print("Failed files written to ./failed_files.txt; re-run with -f on that list to retry.")
+
+    sys.exit(1 if (results["failed"] or results["error"]) else 0)
+
+
+if __name__ == "__main__":
+    main()
