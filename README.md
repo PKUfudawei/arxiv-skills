@@ -2,9 +2,9 @@
 
 # arXiv-skills
 
-**Agent skills for reading academic papers on arXiv — search & download, then parse PDFs to Markdown.**
+**面向 arXiv 学术论文的 Agent 技能集 —— 检索下载论文，再把 PDF 解析成 Markdown。**
 
-[English](./README.md) · [中文](./README.zh-CN.md)
+[English](./README.en.md) · [中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-blueviolet)](https://claude.ai/code)
@@ -13,93 +13,93 @@
 
 </div>
 
-## Table of Contents
+## 目录
 
-- [Skills](#skills)
-- [Quick Start](#quick-start)
-- [arxiv-retriever](#arxiv-retriever)
-- [pdf-parser](#pdf-parser)
-- [Typical Workflow](#typical-workflow)
-- [Requirements](#requirements)
-- [Acknowledgements](#acknowledgements)
+- [技能总览](#技能总览)
+- [快速安装](#快速安装)
+- [arxiv-retriever：检索并下载论文](#arxiv-retriever检索并下载论文)
+- [pdf-parser：PDF 转 Markdown](#pdf-parserpdf-转-markdown)
+- [典型工作流](#典型工作流)
+- [环境与依赖](#环境与依赖)
+- [致谢](#致谢)
 
-## Skills
+## 技能总览
 
-| Skill | What it does |
-|-------|--------------|
-| [arxiv-retriever](#arxiv-retriever) | Search and download arXiv papers (PDF, metadata and BibTeX) from natural-language requests |
-| [pdf-parser](#pdf-parser) | Convert PDF papers to Markdown with images via the PaddleOCR API |
+| 技能 | 作用 |
+|------|------|
+| [arxiv-retriever](#arxiv-retriever检索并下载论文) | 用自然语言检索并下载 arXiv 论文（PDF + 元数据 + BibTeX） |
+| [pdf-parser](#pdf-parserpdf-转-markdown) | 通过 PaddleOCR API 把论文 PDF 转换为带图片的 Markdown |
 
-## Quick Start
+## 快速安装
 
-The repo follows the [Agent Skills](https://agentskills.io) layout (`skills/<name>/SKILL.md`), so it works with [skills.sh](https://skills.sh) and can be installed with any coding agent:
+本仓库遵循 [Agent Skills](https://agentskills.io) 目录规范（`skills/<name>/SKILL.md`），兼容 [skills.sh](https://skills.sh)，可配合任意 coding agent 使用：
 
 ```bash
-# Install the arxiv-retriever skill
+# 安装 arxiv-retriever 技能
 npx skills@latest add PKUfudawei/arxiv-skills --skill arxiv-retriever
 
-# Install the pdf-parser skill
+# 安装 pdf-parser 技能
 npx skills@latest add PKUfudawei/arxiv-skills --skill pdf-parser
 
-# Install both (the installer lets you pick)
+# 两个都装（安装器会询问你要哪些）
 npx skills@latest add PKUfudawei/arxiv-skills
 ```
 
-## arxiv-retriever
+## arxiv-retriever：检索并下载论文
 
-Search arXiv and download papers by extracting parameters from a natural-language request (IDs, keywords, authors, categories, date ranges). Each paper is saved as `<arxiv_id>.pdf` together with `meta.json` and `<arxiv_id>.bib`.
+从自然语言请求中解析参数（论文 ID、关键词、作者、分类、日期范围），检索 arXiv 并下载。每篇论文保存为 `<arxiv_id>.pdf`，并附 `meta.json` 与 `<arxiv_id>.bib`。
 
-**Install this skill**
+**安装这个技能**
 
 ```bash
 npx skills@latest add PKUfudawei/arxiv-skills --skill arxiv-retriever
 ```
 
-**Then ask your coding agent:**
+**然后让 coding agent 执行：**
 
 ```
-Download the 10 latest papers about quantum machine learning
-Download papers 1706.03762 and 2305.12345
-Find papers about attention by author Vaswani
+下载 10 篇最新的量子机器学习论文
+下载论文 1706.03762 和 2305.12345
+查找作者 Vaswani 写的关于 attention 的论文
 ```
 
 ![Demo](assets/demo.png)
 
-Full usage: parameter extraction rules, query syntax and script arguments are in [skills/arxiv-retriever/SKILL.md](skills/arxiv-retriever/SKILL.md).
+参数提取规则、查询语法与脚本参数详见 [skills/arxiv-retriever/SKILL.md](skills/arxiv-retriever/SKILL.md)。
 
-## pdf-parser
+## pdf-parser：PDF 转 Markdown
 
-Convert downloaded PDF papers to Markdown (reading-order text plus extracted images) using the PaddleOCR-VL cloud API. Needs a `PADDLE_TOKEN`; see the skill guide.
+把下载好的论文 PDF 转为 Markdown（保持阅读顺序的正文 + 抽取的图片），底层使用 PaddleOCR-VL 云端 API，需要配置 `PADDLE_TOKEN`，详见技能文档。
 
-**Install this skill**
+**安装这个技能**
 
 ```bash
 npx skills@latest add PKUfudawei/arxiv-skills --skill pdf-parser
 ```
 
-**Then ask your coding agent:**
+**然后让 coding agent 执行：**
 
 ```
-Convert these PDFs to markdown: arxiv/*/*.pdf
-Parse all PDFs in ./papers/ to markdown
+把这些 PDF 转成 markdown：arxiv/*/*.pdf
+把 ./papers/ 目录下的所有 PDF 解析为 markdown
 ```
 
-Full usage: API setup, output format and error handling are in [skills/pdf-parser/SKILL.md](skills/pdf-parser/SKILL.md).
+API 配置、输出格式与错误处理详见 [skills/pdf-parser/SKILL.md](skills/pdf-parser/SKILL.md)。
 
-## Typical Workflow
+## 典型工作流
 
 ```
-1. Ask your agent to download papers from arXiv (arxiv-retriever)
-2. Convert the downloaded PDFs to Markdown for reading (pdf-parser)
+1. 让 agent 从 arXiv 下载论文（arxiv-retriever）
+2. 把下载的 PDF 转成 Markdown 以便阅读（pdf-parser）
 ```
 
-## Requirements
+## 环境与依赖
 
 - Python 3.9+
-- arxiv-retriever: `pip install arxiv arxiv2bib requests tqdm`
-- pdf-parser: `pip install requests tqdm python-dotenv`, plus a PaddleOCR AI Studio API token
+- arxiv-retriever：`pip install arxiv arxiv2bib requests tqdm`
+- pdf-parser：`pip install requests tqdm python-dotenv`，并准备 PaddleOCR AI Studio 的 API token
 
-## Acknowledgements
+## 致谢
 
 - [anthropics/skills](https://github.com/anthropics/skills)
 - [arXiv API](https://info.arxiv.org/help/api/index.html)
